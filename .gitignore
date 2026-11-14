@@ -5,3 +5,6 @@ node_modules/
 # README 校验时生成的临时预览
 assets/readme/.preview-*.png
 assets/readme/_preview*.html
+
+# npm 打包产物（由 Release 附件分发，不进源码树）
+*.tgz
