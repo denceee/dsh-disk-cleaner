@@ -1,0 +1,11 @@
+# 只发布运行所需的文件；测试、素材与本地状态不进 npm 包
+node_modules/
+.dsh-project-memory/
+test/
+assets/
+.git/
+.github/
+*.bak
+*.bak-*
+.preview-*
+_preview*

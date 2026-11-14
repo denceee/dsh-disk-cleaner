@@ -2,11 +2,32 @@
   <img src="./assets/readme/hero.svg" width="100%" alt="dsh-disk-cleaner：DSH 侧边栏磁盘清理插件。左侧是项目名与说明，右侧是真实面板——C 盘已用 93.6%、D 盘 77.4%，下列出回收站 1.1 GB、用户临时文件 512 MB、pnpm 存储 7.9 GB（仅提示），底部显示已选 2 项、预计释放 1.6 GB。">
 </p>
 
+<p align="center">
+  <a href="https://www.npmjs.com/package/@dencee/dsh-disk-cleaner"><img src="https://img.shields.io/npm/v/@dencee/dsh-disk-cleaner?style=flat-square&color=5B9BFF&label=npm" alt="npm 版本"></a>
+  <a href="https://www.npmjs.com/package/@dencee/dsh-disk-cleaner"><img src="https://img.shields.io/npm/dm/@dencee/dsh-disk-cleaner?style=flat-square&color=7D8AA3&label=downloads" alt="npm 月下载量"></a>
+  <a href="https://github.com/denceee/dsh-disk-cleaner/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/@dencee/dsh-disk-cleaner?style=flat-square&color=34D399" alt="MIT License"></a>
+  <img src="https://img.shields.io/node/v/@dencee/dsh-disk-cleaner?style=flat-square&color=7D8AA3" alt="Node 版本要求">
+  <img src="https://img.shields.io/badge/platform-Windows%2010%20%2F%2011-5B9BFF?style=flat-square" alt="平台：Windows 10 / 11">
+  <img src="https://img.shields.io/badge/tests-133%20passed-34D399?style=flat-square" alt="133 项测试通过">
+</p>
+
 **点开侧边栏，AI 帮你判断 C / D 盘哪些能删，勾选即清，并逐项回报释放的空间。**
 
 它不问你「要不要清」，而是先量出每个目录到底占多少，再让当前默认模型排出优先级和理由。你只需要看一眼、勾一下。
 
-`DSH 插件` · `Windows 10 / 11` · `Host 5 路由` · `Client 2 槽位` · `116 项断言`
+`DSH 插件` · `Windows 10 / 11` · `Host 5 路由` · `Client 2 槽位` · `133 项断言`
+
+---
+
+## 安装
+
+```bash
+npm install @dencee/dsh-disk-cleaner
+```
+
+或在 DSH 的插件管理页里按包名安装。安装后侧边栏出现磁盘图标。
+
+需要 DSH 0.2.x 与 Windows 10 / 11。
 
 ---
 
@@ -137,14 +158,16 @@ node test/portable.mjs  # 可移植性：模拟陌生浏览器/无软件/嵌套�
 
 全部通过。`safety.mjs` 与 `audit.mjs` 在临时沙箱里验证「面板显示要删的量 = 实际删掉的量」，`portable.mjs` 在沙箱里造出别的用户电脑，都不动真实文件。
 
-## 安装
+## 本地开发
 
-把插件检出目录通过 `link:` 依赖挂到 `desktop` profile：
+想改代码时，把检出目录通过 `link:` 依赖挂到 `desktop` profile：
 
 ```json
-"dsh-disk-cleaner": "link:<检出目录>"
+"@dencee/dsh-disk-cleaner": "link:<检出目录>"
 ```
 
-改代码后执行一次「插件」页里的开关（关 → 开），或重启 GUI，即生效。
+改完后执行一次「插件」页里的开关（关 → 开），或重启 GUI，即生效。
 
-需要 DSH 0.2.x 与 Windows 10 / 11。
+## 许可
+
+[MIT](./LICENSE)

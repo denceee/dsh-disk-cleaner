@@ -1,9 +1,38 @@
 {
-  "name": "dsh-disk-cleaner",
+  "name": "@dencee/dsh-disk-cleaner",
   "version": "1.0.0",
-  "private": true,
   "type": "module",
-  "description": "磁盘清理 —— 侧边栏入口：AI 分析 C/D 盘空间占用，勾选清理项一键释放空间",
+  "description": "DeepSeek Harness sidebar disk cleaner: the model ranks what occupies your drives, you tick and clean. Browsers and toolchains are discovered by structure, not by a hard-coded list.",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "disk-cleaner",
+    "disk-cleanup",
+    "windows",
+    "deepseek-harness"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "denceee",
+    "url": "https://github.com/denceee"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/denceee/dsh-disk-cleaner.git"
+  },
+  "homepage": "https://github.com/denceee/dsh-disk-cleaner#readme",
+  "bugs": {
+    "url": "https://github.com/denceee/dsh-disk-cleaner/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "os": [
+    "win32"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
@@ -15,7 +44,9 @@
     "client.js",
     "cordis.patch.yml",
     "locale/*.json",
-    "icon.svg"
+    "icon.svg",
+    "README.md",
+    "LICENSE"
   ],
   "dsh": {
     "bundle": {
