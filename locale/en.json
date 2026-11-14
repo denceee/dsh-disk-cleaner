@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Disk cleanup",
+    "description": "A sidebar entry that scans C and D space usage, has the model rank the cleanup candidates, and removes the ones you tick."
+  }
+}

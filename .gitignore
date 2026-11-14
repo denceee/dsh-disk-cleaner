@@ -1,0 +1,7 @@
+# 插件运行与本地缓存，不随仓库分发
+node_modules/
+.dsh-project-memory/
+
+# README 校验时生成的临时预览
+assets/readme/.preview-*.png
+assets/readme/_preview*.html

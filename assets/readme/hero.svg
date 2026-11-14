@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="440" viewBox="0 0 1200 440" role="img" aria-labelledby="heroTitle heroDesc">
+  <title id="heroTitle">dsh-disk-cleaner — DSH 侧边栏磁盘清理插件</title>
+  <desc id="heroDesc">左侧是项目名 dsh-disk-cleaner 与一句话说明：点开侧边栏，AI 判断 C / D 盘哪些能删，勾选即清理。右侧是真实面板：C 盘已用 93.6%、D 盘 77.4%，下方列出回收站 1.1 GB、用户临时文件 512 MB、pnpm 存储 7.9 GB（仅提示），底部显示已选 2 项、预计释放 1.6 GB。</desc>
+
+  <defs>
+    <linearGradient id="heroBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0C1018"/>
+      <stop offset="1" stop-color="#080A0F"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="440" rx="24" fill="url(#heroBg)"/>
+
+  <!-- identity -->
+  <g id="hero-identity">
+    <text x="56" y="78" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" letter-spacing="2.4" fill="#5B9BFF">DSH PLUGIN · WINDOWS DISK CLEANUP</text>
+
+    <text x="56" y="152" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="56" font-weight="700" fill="#E9EEF9">dsh-disk-cleaner</text>
+
+    <text x="56" y="204" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#A7B4CC">点开侧边栏，AI 判断 C / D 盘哪些能删</text>
+    <text x="56" y="236" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="21" fill="#A7B4CC">勾选即清理，并逐项回报释放的空间</text>
+
+    <!-- capacity-bar motif -->
+    <rect x="56" y="268" width="240" height="8" rx="4" fill="#1A2130"/>
+    <rect x="56" y="268" width="225" height="8" rx="4" fill="#FF6B81"/>
+    <text x="308" y="276" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#FF6B81">C: 93.6%</text>
+
+    <text x="56" y="316" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" fill="#7D8AA3">Host 5 路由 · Client 2 槽位 · 116 项断言</text>
+
+    <!-- action cue -->
+    <rect x="56" y="344" width="212" height="44" rx="10" fill="#121722" stroke="#263044"/>
+    <text x="76" y="372" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="18" fill="#E9EEF9">侧边栏 → 磁盘清理</text>
+  </g>
+
+  <!-- real panel specimen -->
+  <g id="hero-panel">
+    <rect x="672" y="56" width="472" height="328" rx="16" fill="#121722" stroke="#263044"/>
+
+    <text x="692" y="90" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="19" font-weight="600" fill="#E9EEF9">磁盘清理</text>
+    <text x="1124" y="90" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#7D8AA3">扫描完成 · 7.2 s</text>
+
+    <!-- drive C -->
+    <rect x="692" y="106" width="210" height="64" rx="12" fill="#0C1018" stroke="#263044"/>
+    <text x="706" y="128" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#E9EEF9">C:</text>
+    <text x="888" y="128" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#FF6B81">93.6%</text>
+    <rect x="706" y="139" width="182" height="6" rx="3" fill="#1A2130"/>
+    <rect x="706" y="139" width="170" height="6" rx="3" fill="#FF6B81"/>
+    <text x="706" y="160" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#7D8AA3">13 GB 可用 / 200 GB</text>
+
+    <!-- drive D -->
+    <rect x="914" y="106" width="210" height="64" rx="12" fill="#0C1018" stroke="#263044"/>
+    <text x="928" y="128" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#E9EEF9">D:</text>
+    <text x="1110" y="128" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#5B9BFF">77.4%</text>
+    <rect x="928" y="139" width="182" height="6" rx="3" fill="#1A2130"/>
+    <rect x="928" y="139" width="141" height="6" rx="3" fill="#5B9BFF"/>
+    <text x="928" y="160" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#7D8AA3">62 GB 可用 / 275 GB</text>
+
+    <text x="692" y="196" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#7D8AA3">清理项 3 / 21</text>
+
+    <!-- row 1: checked, caution -->
+    <rect x="694" y="215" width="14" height="14" rx="4" fill="#5B9BFF"/>
+    <path d="M697.5 222.5l2.6 2.8 4.4-5" stroke="#0A0D12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <text x="718" y="227" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="16" fill="#E9EEF9">回收站</text>
+    <rect x="774" y="209" width="46" height="20" rx="10" fill="none" stroke="#F5B33C" stroke-opacity="0.7"/>
+    <text x="797" y="223" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="12" fill="#F5B33C">谨慎</text>
+    <text x="1124" y="227" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#E9EEF9">1.1 GB</text>
+
+    <!-- row 2: checked, safe -->
+    <rect x="694" y="249" width="14" height="14" rx="4" fill="#5B9BFF"/>
+    <path d="M697.5 256.5l2.6 2.8 4.4-5" stroke="#0A0D12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <text x="718" y="261" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="16" fill="#E9EEF9">用户临时文件</text>
+    <rect x="822" y="243" width="46" height="20" rx="10" fill="none" stroke="#34D399" stroke-opacity="0.7"/>
+    <text x="845" y="257" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="12" fill="#34D399">安全</text>
+    <text x="1124" y="261" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#E9EEF9">512 MB</text>
+
+    <!-- row 3: report-only -->
+    <rect x="694" y="283" width="14" height="14" rx="4" fill="none" stroke="#3A465C" stroke-width="1.5"/>
+    <text x="718" y="295" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="16" fill="#7D8AA3">pnpm 存储</text>
+    <rect x="806" y="277" width="60" height="20" rx="10" fill="none" stroke="#3A465C"/>
+    <text x="836" y="291" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="12" fill="#7D8AA3">仅提示</text>
+    <text x="1124" y="295" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15" fill="#7D8AA3">7.9 GB</text>
+
+    <!-- footer -->
+    <line x1="692" y1="320" x2="1124" y2="320" stroke="#263044"/>
+    <text x="692" y="354" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#7D8AA3">已选 2 项 · 预计释放 1.6 GB</text>
+    <rect x="988" y="334" width="136" height="32" rx="8" fill="#5B9BFF"/>
+    <text x="1056" y="355" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#08101F">清理选中项</text>
+  </g>
+</svg>
