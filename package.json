@@ -1,6 +1,6 @@
 {
   "name": "@dencee/dsh-disk-cleaner",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "type": "module",
   "description": "DeepSeek Harness sidebar disk cleaner: the model ranks what occupies your drives, you tick and clean. Browsers and toolchains are discovered by structure, not by a hard-coded list.",
   "keywords": [
