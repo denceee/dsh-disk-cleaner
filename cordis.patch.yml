@@ -1,3 +1,5 @@
 - insert:
+    # The row name is the module specifier the loader resolves, so it has to be
+    # the package's real name — the scoped one it publishes under.
     - id: disk-cleaner
-      name: dsh-disk-cleaner
+      name: '@dencee/dsh-disk-cleaner'

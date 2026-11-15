@@ -1,5 +1,7 @@
 window.__ModuleLoader__.load({
-  id: 'dsh-disk-cleaner',
+  // Must equal the package name exactly: the loader keys the module table by
+  // it, and a mismatch leaves the client half unregistered with no error.
+  id: '@dencee/dsh-disk-cleaner',
   factory(require) {
     const React = require('react')
     const h = React.createElement
