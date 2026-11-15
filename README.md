@@ -8,14 +8,14 @@
   <a href="https://github.com/denceee/dsh-disk-cleaner/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/@dencee/dsh-disk-cleaner?style=flat-square&color=34D399" alt="MIT License"></a>
   <img src="https://img.shields.io/node/v/@dencee/dsh-disk-cleaner?style=flat-square&color=7D8AA3" alt="Node 版本要求">
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%2F%2011-5B9BFF?style=flat-square" alt="平台：Windows 10 / 11">
-  <img src="https://img.shields.io/badge/tests-133%20passed-34D399?style=flat-square" alt="133 项测试通过">
+  <img src="https://img.shields.io/badge/tests-150%20passed-34D399?style=flat-square" alt="150 项测试通过">
 </p>
 
 **点开侧边栏，AI 帮你判断 C / D 盘哪些能删，勾选即清，并逐项回报释放的空间。**
 
 它不问你「要不要清」，而是先量出每个目录到底占多少，再让当前默认模型排出优先级和理由。你只需要看一眼、勾一下。
 
-`DSH 插件` · `Windows 10 / 11` · `Host 5 路由` · `Client 2 槽位` · `133 项断言`
+`DSH 插件` · `Windows 10 / 11` · `Host 5 路由` · `Client 2 槽位` · `150 项断言`
 
 ---
 
@@ -68,6 +68,12 @@ npm install @dencee/dsh-disk-cleaner
 5. 结果逐项列出释放量，失败项给出原因。
 
 「重新扫描」随时重跑。「仅提示」的项目不可勾选，只给正确做法。
+
+### 列表什么时候可以勾
+
+扫描一结束列表就能勾，**不等 AI**。模型排序是并行的：它回来之前你先勾的项不会丢，回来之后也不会覆盖你的选择——只有在你什么都没动的情况下，它才会把推荐项打上勾。
+
+慢盘上扫描可能算不完（机械硬盘、杀毒正在扫描）。这种条目仍然会显示，带「未完整统计」标签，再扫一次通常会算全，而不是从列表里消失。
 
 ## 清理项
 
@@ -150,8 +156,8 @@ npm install @dencee/dsh-disk-cleaner
 ```bash
 node test/smoke.mjs     # 真实扫描本机，含 AI 解析三种分支
 node test/guards.mjs    # 信任围栏、参数校验、删除边界        18 项
-node test/render.mjs    # 面板真实渲染：扫描→排序→勾选→清理   22 项
-node test/safety.mjs    # pnpm store 保护、临时白名单、程序文件过滤  77 项
+node test/render.mjs    # 面板真实渲染：扫描→排序→勾选→清理   31 项
+node test/safety.mjs    # pnpm store 保护、临时白名单、程序文件过滤  85 项
 node test/audit.mjs     # 目录审计：路径重叠、可达性、测量=删除、不穿透链接
 node test/portable.mjs  # 可移植性：模拟陌生浏览器/无软件/嵌套目录的电脑  16 项
 ```

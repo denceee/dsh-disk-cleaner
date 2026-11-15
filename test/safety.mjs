@@ -171,6 +171,27 @@ console.log('delete boundary')
 
 /* ------------------------------------- 4. live catalog carries the fix ------ */
 
+console.log('panel inclusion rule')
+{
+  const { shouldListEntry } = __test
+  // A slow disk must not look like an empty one, and a permission wall must not
+  // look like "nothing to clean". This is the rule that decides which of those
+  // rows survive into the panel.
+  const cases = [
+    ['a sized entry is listed', { paths: ['x'] }, { bytes: 100, blocked: false, truncated: false }, true],
+    ['a genuinely empty entry is hidden', { paths: ['x'] }, { bytes: 0, blocked: false, truncated: false }, false],
+    ['an unreadable entry is listed with its reason', { paths: ['x'] }, { bytes: 0, blocked: true, truncated: false }, true],
+    ['a timed-out measurement is listed', { paths: ['x'] }, { bytes: 0, blocked: false, truncated: true }, true],
+    ['advisory advice with a size is listed', { paths: ['x'], reportOnly: true }, { bytes: 50, blocked: false, truncated: false }, true],
+    ['advisory advice with a target is listed', { paths: ['x'], reportOnly: true }, { bytes: 0, blocked: false, truncated: false }, true],
+    ['advisory advice with no target is hidden', { paths: [], reportOnly: true }, { bytes: 0, blocked: false, truncated: false }, false],
+    ['advisory advice with a note survives no target', { paths: [], reportOnly: true, note: '手动' }, { bytes: 0, blocked: false, truncated: false }, true],
+  ]
+  for (const [label, item, measured, expected] of cases) {
+    check(label, shouldListEntry(item, measured) === expected)
+  }
+}
+
 console.log('live catalog')
 {
   const routes = new Map()

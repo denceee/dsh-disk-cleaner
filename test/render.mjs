@@ -393,7 +393,213 @@ async function runClean(Component, options = {}) {
   return { tree }
 }
 
-console.log('panel: a declined confirmation cancels the clean')
+/* -------------------------------- regression: selectable while analysing -- */
+
+/**
+ * The reported bug: on another machine the model call was slow, and the list
+ * stayed tick-proof the whole time. Analysis must never gate the checkboxes.
+ */
+console.log('\npanel: the list is selectable while the model is still thinking')
+{
+  // A model call that never settles within this test's window.
+  const realFetch = globalThis.fetch
+  globalThis.fetch = async (url, init) => {
+    if (String(url).includes('/analyze')) await new Promise(() => {})
+    return realFetch(url, init)
+  }
+
+  const instance = { hooks: [], index: 0, pending: [], dirty: false, cleanups: [] }
+  const paint = () => {
+    instance.index = 0
+    instance.pending = []
+    activeCtx = instance
+    try {
+      return evaluate(React.createElement(Panel, { t: (key) => key }))
+    } finally {
+      activeCtx = null
+    }
+  }
+
+  let tree = null
+  for (let round = 0; round < 12; round += 1) {
+    instance.dirty = false
+    tree = paint()
+    for (const slot of instance.pending) slot.run()
+    for (let tick = 0; tick < 30 && instance.dirty === false; tick += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5))
+    }
+    if (instance.dirty === false) break
+  }
+
+  const boxes = findAll(tree, (node) => node.type === 'input')
+  check('rows are on screen before the ranking lands', boxes.length === 3, String(boxes.length))
+  check('the selectable rows are not disabled', boxes[0].props.disabled === false)
+  check('the report-only row is still disabled', boxes[2].props.disabled === true)
+
+  // Rows sort by size, so find the one the rule preset ticked rather than
+  // assuming an index: only `safe` non-report items are preselected.
+  const tickedIndex = boxes.findIndex((box) => box.props.checked === true)
+  check('the rule preset ticked a safe row', tickedIndex >= 0, JSON.stringify(boxes.map((b) => b.props.checked)))
+
+  // Ticking must work while analysis is in flight: untick the ticked row and
+  // confirm the state actually changed.
+  boxes[tickedIndex].props.onChange()
+  for (let tick = 0; tick < 30; tick += 1) await new Promise((resolve) => setTimeout(resolve, 5))
+  const repainted = paint()
+  const after = findAll(repainted, (node) => node.type === 'input')
+  check(
+    'a click during analysis toggles the row',
+    after[tickedIndex].props.checked === false,
+    JSON.stringify(after.map((b) => b.props.checked)),
+  )
+
+  globalThis.fetch = realFetch
+}
+
+/* --------------------------- regression: user choice survives the ranking - */
+
+console.log('\npanel: a late ranking does not overwrite a manual choice')
+{
+  const realFetch = globalThis.fetch
+  let releaseAnalyze
+  const gate = new Promise((resolve) => { releaseAnalyze = resolve })
+  globalThis.fetch = async (url, init) => {
+    const target = String(url)
+    if (target.includes('/analyze')) {
+      await gate
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ok: true,
+          analysis: {
+            ai: true,
+            model: 'x/y',
+            advice: '清理回收站',
+            items: [{ id: 'recycle', reason: '体积最大', priority: 1, recommended: true }],
+          },
+        }),
+      }
+    }
+    return realFetch(url, init)
+  }
+
+  const instance = { hooks: [], index: 0, pending: [], dirty: false, cleanups: [] }
+  const paint = () => {
+    instance.index = 0
+    instance.pending = []
+    activeCtx = instance
+    try {
+      return evaluate(React.createElement(Panel, { t: (key) => key }))
+    } finally {
+      activeCtx = null
+    }
+  }
+
+  let tree = null
+  for (let round = 0; round < 12; round += 1) {
+    instance.dirty = false
+    tree = paint()
+    for (const slot of instance.pending) slot.run()
+    for (let tick = 0; tick < 30 && instance.dirty === false; tick += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5))
+    }
+    if (instance.dirty === false) break
+  }
+
+  // The user clears everything, then ticks exactly one row by hand.
+  const boxes = findAll(tree, (node) => node.type === 'input')
+  const fresh = paint()
+  const inputs = findAll(fresh, (node) => node.type === 'input')
+  // Untick the preset, then tick only the second row.
+  for (const box of inputs) {
+    if (box.props.checked === true) box.props.onChange()
+  }
+  for (let tick = 0; tick < 20; tick += 1) await new Promise((resolve) => setTimeout(resolve, 5))
+  const cleared = findAll(paint(), (node) => node.type === 'input')
+  cleared[1].props.onChange()
+  for (let tick = 0; tick < 20; tick += 1) await new Promise((resolve) => setTimeout(resolve, 5))
+
+  // Now let the model answer, which recommends a different row.
+  releaseAnalyze()
+  for (let tick = 0; tick < 40; tick += 1) await new Promise((resolve) => setTimeout(resolve, 5))
+
+  const final = findAll(paint(), (node) => node.type === 'input')
+  check(
+    'the manual choice is preserved',
+    final[1].props.checked === true && final[0].props.checked === false,
+    JSON.stringify(final.map((b) => b.props.checked)),
+  )
+
+  globalThis.fetch = realFetch
+}
+
+/* ------------------- regression: a fully blocked machine is not empty ----- */
+
+console.log('\npanel: a machine where everything needs elevation still reads')
+{
+  const realFetch = globalThis.fetch
+  globalThis.fetch = async (url, init) => {
+    const target = String(url)
+    if (target.includes('/scan')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ok: true,
+          scan: {
+            id: 'scan-blocked',
+            at: Date.now(),
+            tookMs: 1200,
+            platform: 'win32',
+            volumes: [{ letter: 'C', root: 'C:\\', total: 200 * 1024 ** 3, free: 5 * 1024 ** 3, used: 195 * 1024 ** 3 }],
+            breakdown: [],
+            items: [
+              { id: 'prefetch', label: 'Prefetch', detail: 'C:\\Windows\\Prefetch', risk: 'caution', admin: true, reportOnly: false, kind: 'cache', bytes: 0, files: 0, truncated: false, blocked: true, paths: 1 },
+              { id: 'temp-user', label: '用户临时文件', detail: '%TEMP%', risk: 'safe', admin: false, reportOnly: false, kind: 'cache', bytes: 2048, files: 1, truncated: false, paths: 1 },
+            ],
+            bigFiles: [],
+          },
+        }),
+      }
+    }
+    return realFetch(url, init)
+  }
+
+  const instance = { hooks: [], index: 0, pending: [], dirty: false, cleanups: [] }
+  const paint = () => {
+    instance.index = 0
+    instance.pending = []
+    activeCtx = instance
+    try {
+      return evaluate(React.createElement(Panel, { t: (key) => key }))
+    } finally {
+      activeCtx = null
+    }
+  }
+  let tree = null
+  for (let round = 0; round < 12; round += 1) {
+    instance.dirty = false
+    tree = paint()
+    for (const slot of instance.pending) slot.run()
+    for (let tick = 0; tick < 30 && instance.dirty === false; tick += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5))
+    }
+    if (instance.dirty === false) break
+  }
+
+  const boxes = findAll(tree, (node) => node.type === 'input')
+  const text = textOf(tree)
+  check('the blocked entry is still listed', boxes.length >= 2, String(boxes.length))
+  check('it explains why it cannot be cleaned', text.includes('当前无权限读取'))
+  check('the blocked row cannot be ticked', boxes.some((b) => b.props.disabled === true && b.props.checked !== true))
+
+  globalThis.fetch = realFetch
+}
+
+/* ------------------------- regression: selection survives a slow analysis - */
+
+console.log('\npanel: a declined confirmation cancels the clean')
 {
   calls.length = 0
   const { tree } = await runClean(Panel, { confirmAnswer: false })

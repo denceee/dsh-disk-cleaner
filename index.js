@@ -1167,8 +1167,7 @@ async function runScan() {
     // A directory the process may not enumerate keeps its entry: reporting
     // "need administrator rights" is useful, hiding it is not.
     const blocked = row.refused.length > 0
-    if (!item.reportOnly && row.bytes <= 0 && !blocked) continue
-    if (item.reportOnly && row.bytes <= 0 && item.paths.length === 0 && item.note === undefined) continue
+    if (!shouldListEntry(item, { bytes: row.bytes, blocked, truncated: row.truncated === true })) continue
     items.push({
       id: item.id,
       label: item.label,
@@ -1468,6 +1467,32 @@ async function isLocked(target) {
       }
     }
   }
+}
+
+/**
+ * Whether a measured catalog entry belongs in the panel.
+ *
+ * Three cases keep an entry that has no size, because hiding it makes the panel
+ * lie about the machine:
+ *
+ *  - `blocked`: the directory exists but this process may not read it, so the
+ *    honest answer is "needs elevation", not "nothing here";
+ *  - `truncated`: the measurement ran out of time; a slow disk must not look
+ *    like an empty one, and a rescan usually completes;
+ *  - the entry is advisory (`reportOnly`) and describes something to do by hand,
+ *    which needs no bytes to be worth showing.
+ *
+ * A report-only entry with no target at all is dropped unless it carries a note,
+ * because there is nothing on this machine to point at.
+ */
+function shouldListEntry(item, measured) {
+  const { bytes, blocked, truncated } = measured
+  if (item.reportOnly === true) {
+    if (bytes > 0) return true
+    if ((item.paths ?? []).length === 0 && item.note === undefined) return false
+    return true
+  }
+  return bytes > 0 || blocked === true || truncated === true
 }
 
 /** Delete one catalog item. Returns a per-item result. */
@@ -1788,6 +1813,7 @@ export const __test = {
   assertSafeTarget,
   listDeletableChildren,
   measureContents,
+  shouldListEntry,
   buildCatalog,
   listVolumes,
   discoverChromiumCacheRoots,

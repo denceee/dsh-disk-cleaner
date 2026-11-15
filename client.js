@@ -168,11 +168,19 @@ window.__ModuleLoader__.load({
       const [scan, setScan] = React.useState(null)
       const [analysis, setAnalysis] = React.useState(null)
       const [selected, setSelected] = React.useState(() => new Set())
-      const [phase, setPhase] = React.useState('idle')     // idle | scanning | analyzing | cleaning | done
+      const [phase, setPhase] = React.useState('idle')     // idle | scanning | cleaning | done
+      // Analysis runs beside the list rather than in front of it, so it is its
+      // own flag: `phase` decides whether the list is blocked, `analyzing` only
+      // decides what the progress line says.
+      const [analyzing, setAnalyzing] = React.useState(false)
       const [error, setError] = React.useState(null)
       const [result, setResult] = React.useState(null)
       const alive = React.useRef(true)
       const autoStarted = React.useRef(false)
+      // Whether the user has touched the selection since this scan started.
+      // The model's ranking arrives after the list is already interactive, and
+      // it must never overwrite a choice the user made by hand.
+      const userTouched = React.useRef(false)
       // Re-arm on every mount, not just the first one: React's StrictMode
       // unmounts and remounts effects, and a ref left at `false` would make
       // every later result look like it arrived after unmount.
@@ -197,14 +205,15 @@ window.__ModuleLoader__.load({
         setError(null)
         setResult(null)
         setAnalysis(null)
+        setAnalyzing(false)
         setSelected(new Set())
+        userTouched.current = false
         try {
           const body = await request('/scan', undefined, 300000)
           if (!alive.current) return
           const next = body.scan
           setScan(next)
           setVolumes(Array.isArray(next.volumes) ? next.volumes : [])
-          setPhase('analyzing')
 
           // Preselect the safe, non-report items while the model works.
           const preset = new Set()
@@ -213,6 +222,12 @@ window.__ModuleLoader__.load({
           }
           if (alive.current) setSelected(preset)
 
+          // The list becomes interactive now. Analysis runs alongside it: a
+          // slow or missing model must not take selection away from the user,
+          // which is exactly what it used to do.
+          setPhase('idle')
+          setAnalyzing(true)
+
           const analyzed = await request('/analyze', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
@@ -220,21 +235,25 @@ window.__ModuleLoader__.load({
           }, 180000)
           if (!alive.current) return
           setAnalysis(analyzed.analysis ?? null)
-          setPhase('idle')
+          setAnalyzing(false)
 
-          // The model's own recommendation replaces the rule-based preset.
+          // The model's ranking replaces the rule-based preset only when the
+          // user has not already chosen something themselves.
           const ranking = analyzed.analysis
-          if (ranking !== null && ranking !== undefined && ranking.ai === true && Array.isArray(ranking.items)) {
-            const next2 = new Set()
+          if (!userTouched.current
+            && ranking !== null && ranking !== undefined
+            && ranking.ai === true && Array.isArray(ranking.items)) {
+            const recommended = new Set()
             for (const row of ranking.items) {
-              if (row.recommended === true) next2.add(row.id)
+              if (row.recommended === true) recommended.add(row.id)
             }
-            setSelected(next2.size > 0 ? next2 : preset)
+            if (recommended.size > 0) setSelected(recommended)
           }
         } catch (failure) {
           if (!alive.current) return
           setError(failure instanceof Error ? failure.message : String(failure))
           setPhase('idle')
+          setAnalyzing(false)
         }
       }, [])
 
@@ -262,7 +281,10 @@ window.__ModuleLoader__.load({
           }
         }
         return scan.items
-          .filter((item) => item.bytes > 0 || item.reportOnly === true)
+          // The server already decided what belongs in the list: it drops
+          // genuinely empty entries, keeps blocked ones so the reason is
+          // visible, and keeps a timed-out measurement so a slow disk does not
+          // look like an empty disk. Filtering again here would re-hide them.
           .map((item) => ({ item, priority: rank.has(item.id) ? rank.get(item.id) : 50, reason: reason.get(item.id) }))
           .sort((a, b) => {
             if (a.item.reportOnly !== b.item.reportOnly) return a.item.reportOnly ? 1 : -1
@@ -272,7 +294,7 @@ window.__ModuleLoader__.load({
       }, [scan, analysis])
 
       const selectable = React.useMemo(
-        () => itemIndex.filter((row) => row.item.reportOnly !== true),
+        () => itemIndex.filter((row) => row.item.reportOnly !== true && row.item.blocked !== true),
         [itemIndex],
       )
 
@@ -285,6 +307,7 @@ window.__ModuleLoader__.load({
       }, [selectable, selected])
 
       const toggle = (id) => {
+        userTouched.current = true
         setSelected((previous) => {
           const next = new Set(previous)
           if (next.has(id)) next.delete(id)
@@ -294,6 +317,7 @@ window.__ModuleLoader__.load({
       }
 
       const toggleAll = (on) => {
+        userTouched.current = true
         setSelected(() => (on ? new Set(selectable.map((row) => row.item.id)) : new Set()))
       }
 
@@ -331,7 +355,9 @@ window.__ModuleLoader__.load({
         }
       }, [scan, selected, selectedBytes, refreshVolumes])
 
-      const busy = phase === 'scanning' || phase === 'analyzing' || phase === 'cleaning'
+      // Only operations that mutate or invalidate the list block it. Analysis
+      // runs alongside and must never take the checkboxes away.
+      const busy = phase === 'scanning' || phase === 'cleaning'
       const advice = analysis !== null && analysis !== undefined ? analysis : null
       const notice = advice !== null && advice.ai !== true && typeof advice.note === 'string' ? advice.note : null
 
@@ -358,7 +384,10 @@ window.__ModuleLoader__.load({
       const rows = itemIndex.map(({ item, reason }) => {
         const risk = RISK_STYLE[item.risk] ?? RISK_STYLE.caution
         const isSelected = selected.has(item.id)
-        const disabled = item.reportOnly === true || busy
+        // A row is only non-interactive when picking it could not do anything:
+        // advisory entries, directories the process cannot read, or a running
+        // clean that already submitted its ids.
+        const disabled = item.reportOnly === true || item.blocked === true || busy
         return h('div', { key: item.id, className: 'dskc_row' },
           h('input', {
             type: 'checkbox',
@@ -452,10 +481,10 @@ window.__ModuleLoader__.load({
               ),
             ),
 
-            (phase === 'scanning' || phase === 'analyzing') && h('div', { className: 'dskc_card' },
+            phase === 'scanning' && h('div', { className: 'dskc_card' },
               h('div', { className: 'dskc_empty' },
                 h('div', { className: 'dskc_spinner' }),
-                h('span', null, phase === 'scanning' ? t('panel.scanning') : t('panel.analyzing')),
+                h('span', null, t('panel.scanning')),
                 h('span', { className: 'dskc_muted' }, t('panel.scanHint')),
               ),
             ),
@@ -471,6 +500,9 @@ window.__ModuleLoader__.load({
               h('div', { className: 'dskc_card_head' },
                 h('span', { className: 'dskc_card_title' }, t('panel.items')),
                 h('div', { className: 'dskc_actions' },
+                  // The list is already usable here; this only reports that the
+                  // ranking is still on its way and marks apply when it lands.
+                  analyzing && h('span', { className: 'dskc_muted' }, t('panel.analyzing')),
                   h('button', {
                     type: 'button', className: 'dskc_btn',
                     onClick: () => toggleAll(true), disabled: busy,

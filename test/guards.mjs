@@ -166,17 +166,19 @@ console.log('atomicity of the item list')
     scan.json.scan.items.filter((item) => item.reportOnly === true).every((item) => item.risk === 'advanced'),
   )
   check(
-    'every non-report item carries a size, unless it is unreadable',
+    'every non-report item has a size, unless it is unreadable or unfinished',
     scan.json.scan.items
       .filter((item) => item.reportOnly !== true)
-      .every((item) => item.bytes > 0 || item.blocked === true),
-    JSON.stringify(scan.json.scan.items.filter((i) => i.reportOnly !== true && i.bytes <= 0 && i.blocked !== true).map((i) => i.id)),
+      // A measurement that ran out of time is kept on purpose: a slow disk must
+      // not look like an empty disk. Those rows legitimately read 0 bytes.
+      .every((item) => item.bytes > 0 || item.blocked === true || item.truncated === true),
+    JSON.stringify(scan.json.scan.items.filter((i) => i.reportOnly !== true && i.bytes <= 0 && i.blocked !== true && i.truncated !== true).map((i) => i.id)),
   )
   check(
-    'a zero-byte selectable item always explains itself as blocked',
+    'a zero-byte selectable item always explains itself',
     scan.json.scan.items
       .filter((item) => item.reportOnly !== true && item.bytes <= 0)
-      .every((item) => item.blocked === true),
+      .every((item) => item.blocked === true || item.truncated === true),
   )
 }
 
