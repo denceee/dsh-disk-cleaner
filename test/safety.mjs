@@ -222,10 +222,16 @@ console.log('live catalog')
   check('pnpm store names the safe command', /pnpm store prune/.test(store?.detail ?? ''))
   // The pnpm metadata cache is now part of the discovered Node toolchain group
   // rather than a hand-written entry, so check that it is still deletable there.
-  const nodeGroup = byId.get('toolchain-node')
+  // This reads the catalog rather than the scan: a scan drops groups that
+  // measured zero bytes, and whether this machine's npm caches happen to be
+  // empty says nothing about the policy being tested.
+  const nodeGroup = __test.buildCatalog(__test.listVolumes()).find((item) => item.id === 'toolchain-node')
   check('the pnpm metadata cache stays deletable inside the Node group',
     nodeGroup !== undefined && nodeGroup.reportOnly !== true,
     JSON.stringify(nodeGroup?.label))
+  check('the Node group still owns the pnpm metadata cache',
+    (nodeGroup?.paths ?? []).some((target) => /pnpm-cache/i.test(target)),
+    JSON.stringify(nodeGroup?.paths))
 
   const programFiles = scan.items.filter(
     (item) => item.kind === 'file' && /\.(exe|dll|asar|node|wasm|sys|pak|bin)$/i.test(item.label),

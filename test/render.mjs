@@ -76,6 +76,13 @@ const React = {
       ctx.pending.push(ctx.hooks[i])
     }
   },
+  // The real component measures layout in a layout effect, because FLIP has to
+  // read old and new boxes in the same frame. There is no DOM here, so it is
+  // the same bookkeeping as useEffect; the FLIP behaviour is asserted
+  // separately with fake nodes.
+  useLayoutEffect(fn, deps) {
+    React.useEffect(fn, deps)
+  },
 }
 
 /* ------------------------------------------------------------- load client -- */
@@ -606,6 +613,330 @@ console.log('\npanel: a declined confirmation cancels the clean')
   check('no clean request was made', !calls.some((line) => line.includes('/clean')), JSON.stringify(calls))
   check('the item list is still on screen', findAll(tree, (node) => node.props.className === 'dskc_row').length === 3)
   delete globalThis.window.confirm
+}
+
+/* ------------------------------- regression: the picker re-ranks only ------ */
+
+console.log('\npanel: switching model re-ranks without rescanning')
+{
+  const realFetch = globalThis.fetch
+  const bodies = []
+  globalThis.fetch = async (url, init) => {
+    const target = String(url)
+    if (init?.body !== undefined) {
+      try { bodies.push(JSON.parse(String(init.body))) } catch { bodies.push(undefined) }
+    }
+    if (target.includes('/models')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ok: true,
+          models: {
+            available: true,
+            default: { provider: 'qodercn', model: 'dfmodel' },
+            failures: [],
+            groups: [
+              {
+                id: 'qodercn',
+                name: 'QoderCN',
+                models: [
+                  { id: 'dfmodel', name: 'DF Model' },
+                  {
+                    id: 'dfmodel-pro',
+                    name: 'DF Model Pro',
+                    reasoning: { efforts: [{ id: 'low', name: '低' }, { id: 'high', name: '高' }], defaultEffort: 'low' },
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      }
+    }
+    return realFetch(url, init)
+  }
+
+  const instance = { hooks: [], index: 0, pending: [], dirty: false, cleanups: [] }
+  const paint = () => {
+    instance.index = 0
+    instance.pending = []
+    activeCtx = instance
+    try {
+      return evaluate(React.createElement(Panel, { t: (key) => key }))
+    } finally {
+      activeCtx = null
+    }
+  }
+  let tree = null
+  for (let round = 0; round < 20; round += 1) {
+    instance.dirty = false
+    tree = paint()
+    for (const slot of instance.pending) slot.run()
+    for (let tick = 0; tick < 30 && instance.dirty === false; tick += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5))
+    }
+    if (instance.dirty === false) break
+  }
+
+  const selects = findAll(tree, (node) => node.type === 'select')
+  check('the model picker renders', selects.length === 1, String(selects.length))
+  check('it starts on the deployment default', selects[0]?.props.value === 'qodercn/dfmodel', String(selects[0]?.props.value))
+
+  calls.length = 0
+  bodies.length = 0
+  selects[0].props.onChange({ target: { value: 'qodercn/dfmodel-pro' } })
+  for (let round = 0; round < 10; round += 1) {
+    instance.dirty = false
+    tree = paint()
+    for (const slot of instance.pending) slot.run()
+    for (let tick = 0; tick < 30 && instance.dirty === false; tick += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5))
+    }
+    if (instance.dirty === false) break
+  }
+
+  check('a model change does not rescan', !calls.some((line) => line.includes('/scan')), JSON.stringify(calls))
+  check('it re-runs the ranking', calls.some((line) => line.includes('/analyze')), JSON.stringify(calls))
+  check('the picked provider/model is sent',
+    bodies.some((body) => body?.provider === 'qodercn' && body?.model === 'dfmodel-pro'),
+    JSON.stringify(bodies))
+
+  const after = findAll(tree, (node) => node.type === 'select')
+  check('the model with efforts gains an effort control', after.length === 2, String(after.length))
+  check('the effort starts on the model default', after[1]?.props.value === 'low', String(after[1]?.props.value))
+
+  calls.length = 0
+  bodies.length = 0
+  after[1].props.onChange({ target: { value: 'high' } })
+  for (let round = 0; round < 10; round += 1) {
+    instance.dirty = false
+    tree = paint()
+    for (const slot of instance.pending) slot.run()
+    for (let tick = 0; tick < 30 && instance.dirty === false; tick += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5))
+    }
+    if (instance.dirty === false) break
+  }
+  check('an effort change carries reasoningEffort',
+    bodies.some((body) => body?.reasoningEffort === 'high' && body?.model === 'dfmodel-pro'),
+    JSON.stringify(bodies))
+
+  globalThis.fetch = realFetch
+}
+
+/* -------------------- regression: a slow reply cannot overwrite a newer one - */
+
+console.log('\npanel: a slow earlier ranking cannot overwrite a newer one')
+{
+  const realFetch = globalThis.fetch
+  const gates = []
+  let analyzeCount = 0
+  globalThis.fetch = async (url, init) => {
+    const target = String(url)
+    if (target.includes('/models')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ok: true,
+          models: {
+            available: true,
+            default: { provider: 'qodercn', model: 'dfmodel' },
+            failures: [],
+            groups: [
+              {
+                id: 'qodercn',
+                name: 'QoderCN',
+                models: [
+                  { id: 'dfmodel', name: 'DF Model' },
+                  { id: 'dfmodel-pro', name: 'DF Model Pro' },
+                ],
+              },
+              { id: 'deepseek', name: 'DeepSeek', models: [{ id: 'deepseek-chat', name: 'DeepSeek Chat' }] },
+            ],
+          },
+        }),
+      }
+    }
+    if (target.includes('/analyze')) {
+      analyzeCount += 1
+      const index = analyzeCount
+      // Every analysis waits on its own gate so the test controls the order.
+      let release
+      const promise = new Promise((resolve) => { release = resolve })
+      gates.push({ release: () => release(), promise })
+      await promise
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ok: true,
+          analysis: {
+            ai: true,
+            model: 'model-' + index,
+            advice: '来自第 ' + index + ' 次请求',
+            items: [{ id: 'recycle', reason: 'r' + index, priority: 1, recommended: true }],
+          },
+        }),
+      }
+    }
+    return realFetch(url, init)
+  }
+
+  const instance = { hooks: [], index: 0, pending: [], dirty: false, cleanups: [] }
+  const paint = () => {
+    instance.index = 0
+    instance.pending = []
+    activeCtx = instance
+    try {
+      return evaluate(React.createElement(Panel, { t: (key) => key }))
+    } finally {
+      activeCtx = null
+    }
+  }
+  const settleOnce = async (rounds = 6) => {
+    let tree = null
+    for (let round = 0; round < rounds; round += 1) {
+      instance.dirty = false
+      tree = paint()
+      for (const slot of instance.pending) slot.run()
+      for (let tick = 0; tick < 30 && instance.dirty === false; tick += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 5))
+      }
+      if (instance.dirty === false) break
+    }
+    return tree
+  }
+
+  let tree = await settleOnce()
+  const selects = findAll(tree, (node) => node.type === 'select')
+  check('the picker is available before the first ranking returns', selects.length === 1, String(selects.length))
+
+  // Switch twice without releasing either reply.
+  selects[0].props.onChange({ target: { value: 'qodercn/dfmodel-pro' } })
+  tree = await settleOnce(3)
+  const again = findAll(tree, (node) => node.type === 'select')
+  again[0].props.onChange({ target: { value: 'deepseek/deepseek-chat' } })
+  tree = await settleOnce(3)
+
+  // Release the newest reply first, then the two stale ones. If the guard is
+  // missing, the last release wins and the panel shows an older ranking.
+  const newest = gates[gates.length - 1]
+  newest?.release()
+  tree = await settleOnce(4)
+  for (let i = gates.length - 2; i >= 0; i -= 1) gates[i].release()
+  tree = await settleOnce(6)
+
+  const text = textOf(tree)
+  check('the newest reply is the one on screen', text.includes('来自第 ' + analyzeCount + ' 次请求'), text.slice(-260))
+
+  globalThis.fetch = realFetch
+}
+
+console.log()
+console.log('motion: the FLIP diff drives the list reordering')
+{
+  const { measureRowShifts } = plugin.__test
+  const nodeAt = (top) => ({ getBoundingClientRect: () => ({ top }) })
+
+  // A row that moved up: it now sits 92px higher than last layout, so it has to
+  // start 92px lower and travel back to zero.
+  const up = nodeAt(100)
+  const first = measureRowShifts(new Map([['recycle', up]]), new Map([['recycle', 192]]))
+  check('a row that moved up is offset back to its old slot',
+    first.moves.length === 1 && first.moves[0][1] === 92, JSON.stringify(first.moves.map((m) => m[1])))
+  check('the node itself is the animation target', first.moves[0]?.[0] === up)
+  check('the new position is remembered', first.tops.get('recycle') === 100)
+
+  // A row that did not move must not animate: a still list would otherwise
+  // shimmer on every unrelated re-render.
+  const still = measureRowShifts(new Map([['a', nodeAt(40)], ['b', nodeAt(86)]]), new Map([['a', 40], ['b', 86]]))
+  check('rows that did not move produce no animation', still.moves.length === 0, JSON.stringify(still.moves.length))
+
+  // Sub-pixel drift is rounding, not a reordering.
+  const noise = measureRowShifts(new Map([['a', nodeAt(40.4)]]), new Map([['a', 40]]))
+  check('sub-pixel drift is ignored', noise.moves.length === 0, JSON.stringify(noise.moves))
+
+  // A new row has no old slot to travel from, so it appears in place.
+  const added = measureRowShifts(new Map([['fresh', nodeAt(10)]]), new Map())
+  check('a row seen for the first time does not slide', added.moves.length === 0)
+  check('a new row still registers its position', added.tops.get('fresh') === 10)
+
+  // A removed row must not linger, or it would animate from a stale slot if it
+  // came back later.
+  const removed = measureRowShifts(new Map([['kept', nodeAt(20)]]), new Map([['kept', 20], ['gone', 200]]))
+  check('a removed row leaves the position map', !removed.tops.has('gone'))
+  check('removing a row is not a move', removed.moves.length === 0)
+
+  // A node without measurable geometry (a detached or replaced element) is
+  // skipped instead of producing NaN transforms.
+  const broken = measureRowShifts(new Map([['x', { getBoundingClientRect: () => ({ top: NaN }) }]]), new Map([['x', 10]]))
+  check('an unmeasurable node is skipped', broken.moves.length === 0 && !broken.tops.has('x'))
+}
+
+console.log()
+console.log('motion: the entry animation runs on the first paint only')
+{
+  // Drive one instance across the entry window. `renderTree` builds a fresh
+  // hook list per call, so a second call would just seed `entered` back to true;
+  // the settled state has to be observed on the same instance.
+  const instance = { hooks: [], index: 0, pending: [], dirty: false, cleanups: [] }
+  const paint = () => {
+    instance.index = 0
+    instance.pending = []
+    activeCtx = instance
+    try {
+      return evaluate(React.createElement(Panel, { t: (key) => key }))
+    } finally {
+      activeCtx = null
+    }
+  }
+  const innerOf = (node) => findAll(node, (n) => typeof n.props.className === 'string'
+    && n.props.className.includes('dskc_inner'))
+
+  let tree = null
+  for (let round = 0; round < 12; round += 1) {
+    instance.dirty = false
+    tree = paint()
+    for (const slot of instance.pending) slot.run()
+    for (let tick = 0; tick < 30 && instance.dirty === false; tick += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5))
+    }
+    if (instance.dirty === false) break
+  }
+
+  const first = innerOf(tree)
+  check('the panel root exists', first.length === 1, String(first.length))
+  check('the entry class is applied on first paint',
+    first[0] !== undefined && first[0].props.className.includes('dskc_enter'),
+    first[0]?.props.className)
+
+  // Past the 520 ms window the effect fires setEntered(false); repainting the
+  // same instance then reflects whether the flag was actually consumed.
+  await new Promise((resolve) => setTimeout(resolve, 700))
+  instance.dirty = false
+  const settled = paint()
+  for (const slot of instance.pending) slot.run()
+  const after = innerOf(settled)
+
+  check('the entry class is gone once settled',
+    after[0] !== undefined && !after[0].props.className.includes('dskc_enter'),
+    after[0]?.props.className)
+}
+
+console.log()
+console.log('motion: the freed total settles on the exact value')
+{
+  calls.length = 0
+  const { tree } = await runClean(Panel)
+  const text = textOf(tree)
+  const ok = findAll(tree, (node) => node.props.className === 'dskc_ok')
+  check('the result total is rendered', ok.length === 1, String(ok.length))
+  check('the counter lands on the reported total, not an intermediate frame',
+    ok[0] !== undefined && ok[0].children.some((child) => String(child).includes('+')),
+    JSON.stringify(ok[0]?.children))
+  check('the counted value matches the clean result', text.includes('+1.08 GB'), text.slice(0, 200))
 }
 
 console.log()

@@ -1,21 +1,23 @@
 <p align="center">
-  <img src="./assets/readme/hero.svg" width="100%" alt="dsh-disk-cleaner：DSH 侧边栏磁盘清理插件。左侧是项目名与说明，右侧是真实面板——C 盘已用 93.6%、D 盘 77.4%，下列出回收站 1.1 GB、用户临时文件 512 MB、pnpm 存储 7.9 GB（仅提示），底部显示已选 2 项、预计释放 1.6 GB。">
+  <img src="./assets/readme/hero.svg" width="100%" alt="dsh-disk-cleaner：DSH 侧边栏磁盘清理插件。左侧是项目名与一句话说明——先量出每个目录占多少，再让模型排出优先级和理由，勾选即清理；下面是 C 盘 93.6%（剩 13 GB）、D 盘 77.4%（剩 62 GB）两个用量环。右侧是真实扫描结果的面板复现：表头含模型选择器与 7.2 秒耗时，清理项列出回收站 1.1 GB（谨慎）、用户临时文件 512 MB（安全）、pnpm 存储 7.9 GB（仅提示），底部显示已选 2 项、预计释放 1.6 GB。">
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@dencee/dsh-disk-cleaner"><img src="https://img.shields.io/npm/v/@dencee/dsh-disk-cleaner?style=flat-square&color=5B9BFF&label=npm" alt="npm 版本"></a>
   <a href="https://www.npmjs.com/package/@dencee/dsh-disk-cleaner"><img src="https://img.shields.io/npm/dm/@dencee/dsh-disk-cleaner?style=flat-square&color=7D8AA3&label=downloads" alt="npm 月下载量"></a>
-  <a href="https://github.com/denceee/dsh-disk-cleaner/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/@dencee/dsh-disk-cleaner?style=flat-square&color=34D399" alt="MIT License"></a>
-  <img src="https://img.shields.io/node/v/@dencee/dsh-disk-cleaner?style=flat-square&color=7D8AA3" alt="Node 版本要求">
-  <img src="https://img.shields.io/badge/platform-Windows%2010%20%2F%2011-5B9BFF?style=flat-square" alt="平台：Windows 10 / 11">
-  <img src="https://img.shields.io/badge/tests-150%20passed-34D399?style=flat-square" alt="150 项测试通过">
+  <img src="./assets/readme/badge-platform.svg" alt="平台：Windows 10 / 11">
+  <img src="./assets/readme/badge-discovery.svg" alt="清理项按目录结构发现，不是写死的产品清单">
+  <img src="./assets/readme/badge-ranking.svg" alt="模型负责排序与理由，不决定删什么">
+  <img src="./assets/readme/badge-tests.svg" alt="204 项测试通过">
+  <img src="./assets/readme/badge-node.svg" alt="Node 版本要求：20 及以上">
+  <a href="https://github.com/denceee/dsh-disk-cleaner/blob/main/LICENSE"><img src="./assets/readme/badge-license.svg" alt="MIT License"></a>
 </p>
 
 **点开侧边栏，AI 帮你判断 C / D 盘哪些能删，勾选即清，并逐项回报释放的空间。**
 
 它不问你「要不要清」，而是先量出每个目录到底占多少，再让当前默认模型排出优先级和理由。你只需要看一眼、勾一下。
 
-`DSH 插件` · `Windows 10 / 11` · `Host 5 路由` · `Client 2 槽位` · `150 项断言`
+`DSH 插件` · `Windows 10 / 11` · `Host 6 路由` · `Client 2 槽位` · `204 项断言`
 
 ---
 
@@ -45,7 +47,7 @@ npm install @dencee/dsh-disk-cleaner
 排在最前面的几项：
 
 | 清理项 | 体积 | 风险 |
-|---|---:|---|
+|---|---|---:|
 | pnpm 存储 | 7.9 GB | 仅提示 |
 | 回收站 | 1.1 GB | 谨慎 |
 | Gradle 缓存 | 1.1 GB | 谨慎 |
@@ -53,27 +55,51 @@ npm install @dencee/dsh-disk-cleaner
 | 用户临时文件 | 512 MB | 安全 |
 | npm 缓存 | 258 MB | 安全 |
 
-体积是**真跑出来的**，不是估算——每个目录都限时遍历了一遍。
+体积是**真跑出来的**，不是估算——每个目录都限时遍历了一遍。上表里勾选「回收站」与「用户临时文件」两项，确认框会写明共释放 **1.6 GB**；hero 与流程图里的数字都取自这一次扫描。
 
 ## 怎么用
 
 <p align="center">
-  <img src="./assets/readme/flow.svg" width="100%" alt="四个步骤：打开面板自动触发扫描；扫描加排序约 7.2 秒量完 21 项并让模型给出优先级；勾选确认时 AI 推荐项已预选、确认框写明释放量；清理后逐项回报释放量与失败原因。">
+  <img src="./assets/readme/flow.svg" width="100%" alt="四个步骤沿一条竖脊推进：打开面板即自动扫描；7.2 秒量完 21 项目录体积，模型同时给出优先级与理由，此时列表已可勾选；勾选确认时推荐项已预选、确认框写明释放量；清理后逐项回报释放量与失败原因，本例回收站 1.1 GB 加临时文件 512 MB 共释放 1.6 GB。">
 </p>
 
 1. 左侧边栏点磁盘图标（在「插件」「定时任务」之后）。
-2. 面板打开**即自动**扫描 + 分析，不用点任何按钮。
+2. 面板打开**即自动**扫描 + 分析，不用点任何按钮；表头右侧的「模型」可选排序用哪个模型。
 3. 扫描完成后逐项勾选 —— AI 推荐的项默认已勾上。
 4. 点「清理选中项」，确认框里写明项数与预计释放量。
 5. 结果逐项列出释放量，失败项给出原因。
 
 「重新扫描」随时重跑。「仅提示」的项目不可勾选，只给正确做法。
 
+### 选模型
+
+表头的「模型」下拉按 provider 分组列出宿主当前可用的模型。换模型**只重排**，不重新扫盘：同一批清理项、同一套勾选，只是换一个模型给优先级和理由。
+
+- 模型自己声明了多档推理强度时，右侧多一个「强度」下拉；没声明就不显示。
+- 选择记在本机，下次打开面板自动沿用；没选过就用宿主的默认模型。
+- 选中的模型被移除后，面板退回默认模型，并在建议条里写明「谁排的序」，不会假装还是原来那个。
+
 ### 列表什么时候可以勾
 
 扫描一结束列表就能勾，**不等 AI**。模型排序是并行的：它回来之前你先勾的项不会丢，回来之后也不会覆盖你的选择——只有在你什么都没动的情况下，它才会把推荐项打上勾。
 
 慢盘上扫描可能算不完（机械硬盘、杀毒正在扫描）。这种条目仍然会显示，带「未完整统计」标签，再扫一次通常会算全，而不是从列表里消失。
+
+### 动效只有一个目的：让你看见发生了什么
+
+面板不动的时候是静的。四处动效各自对应一个状态变化，都不是装饰：
+
+| 时机 | 动的东西 | 为什么 |
+|---|---|---|
+| 打开面板 | 各区块按阅读顺序错开 45ms 落位，只跑一次 | 面板是你刚点开的目的地 |
+| 扫盘 / 清理中 | 一个旋转弧，不确定进度 | 遍历目录没有已知长度，不能编百分比 |
+| AI 排序落地 | 换了位置的行从旧位置滑到新位置；理由行的强调点跟着冒出来 | 顺序变了要看得见原因，不是瞬间换一张表 |
+| 清理完成 | 释放总量从 0 数到目标值，结果卡落下 | 这个数字是你要的结果，看着它长起来才像「结果」 |
+
+行的位移用 FLIP：改完布局后量每行的真实位置，差值反向施加再释放，所以不同行高（带路径的、带理由的）也算得准，不是假设统一行高。两处细节是刻意的：
+
+- 没动的行不参与动画。整张列表每次刷新都抖一下比不动更糟。
+- `prefers-reduced-motion: reduce` 下位移和计数直接跳过，只保留最终状态；计数也不用中间帧，直接写目标值。
 
 ## 清理项
 
@@ -111,7 +137,7 @@ npm install @dencee/dsh-disk-cleaner
 ## 安全
 
 <p align="center">
-  <img src="./assets/readme/safety.svg" width="100%" alt="五道护栏：名称白名单跳过 21 类活目录；六小时 mtime 门槛；占用探测跳过被其他进程打开的文件；程序文件过滤使 .exe/.dll/.asar 永不列出；边界校验拒绝相对路径、磁盘根、受保护系统目录与用户主目录。底部说明 pnpm store 永不自动删除，正确做法是 pnpm store prune。">
+  <img src="./assets/readme/safety.svg" width="100%" alt="五道护栏依次过滤：名称白名单跳过 dsh-*、node-compile-cache、chrome_* 等 21 类活目录；六小时 mtime 门槛；占用探测跳过被其他进程打开的文件；程序文件过滤使 .exe/.dll/.asar 永不列出；边界校验拒绝相对路径、磁盘根、受保护系统目录与用户主目录。底部注明 pnpm store 永不自动删除，正确做法是 pnpm store prune。">
 </p>
 
 ### 临时文件不是「删光 %TEMP%」
@@ -146,20 +172,22 @@ npm install @dencee/dsh-disk-cleaner
 
 | 半部 | 内容 |
 |---|---|
-| Host | `/api/disk-cleaner` 5 条路由：`health` / `volumes` / `scan` / `analyze` / `clean` |
+| Host | `/api/disk-cleaner` 6 条路由：`health` / `volumes` / `models` / `scan` / `analyze` / `clean` |
 | Client | `sidebar.panellist` 图标 + `main` 面板，纯 `createElement`，样式只用 `--dsw-alias-*` 主题令牌 |
 
-扫描用 `fs.statfs` 读容量、限时遍历测目录体积，三路测量并发跑。AI 分析走 `ctx.llm.stream` + `agentDefaultModel.currentSelection()`，模型回复按 JSON 解析——解析失败、回复被代码围栏包住、或压根没挂模型，都会自动退回按体积排序，不会卡住面板。
+扫描用 `fs.statfs` 读容量、限时遍历测目录体积，三路测量并发跑。`/models` 把 `llm.listProviders()` + `llm.listModels()` + `resolveModelInfo()` 折成面板用的模型目录（含模型自带的推理强度档位）——某个 provider 列不出模型就单独记为失败，不影响其它 provider。`/analyze` 接受显式的 `provider` / `model` / `reasoningEffort`，缺省或模型已被移除时退回 `agentDefaultModel.currentSelection()`，并在回复里回报真正跑的模型。模型回复按 JSON 解析——解析失败、回复被代码围栏包住、或压根没挂模型，都会自动退回按体积排序，不会卡住面板。
 
 ## 测试
 
 ```bash
 node test/smoke.mjs     # 真实扫描本机，含 AI 解析三种分支
+node test/models.mjs    # 模型目录、显式选择、失效回退、无 llm 部署    28 项
 node test/guards.mjs    # 信任围栏、参数校验、删除边界        18 项
-node test/render.mjs    # 面板真实渲染：扫描→排序→勾选→清理   31 项
-node test/safety.mjs    # pnpm store 保护、临时白名单、程序文件过滤  85 项
+node test/render.mjs    # 面板真实渲染：扫描→排序→勾选→清理→换模型→动效   56 项
+node test/safety.mjs    # pnpm store 保护、临时白名单、程序文件过滤  86 项
 node test/audit.mjs     # 目录审计：路径重叠、可达性、测量=删除、不穿透链接
 node test/portable.mjs  # 可移植性：模拟陌生浏览器/无软件/嵌套目录的电脑  16 项
+node dev/verify-strings.mjs  # 与上次提交逐字对照，确认中文文案没被改写
 ```
 
 全部通过。`safety.mjs` 与 `audit.mjs` 在临时沙箱里验证「面板显示要删的量 = 实际删掉的量」，`portable.mjs` 在沙箱里造出别的用户电脑，都不动真实文件。

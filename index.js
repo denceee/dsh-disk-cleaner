@@ -1262,24 +1262,173 @@ function parseJsonObject(text) {
 }
 
 /**
- * Ask the session's default model to rank the findings. Resolves with
- * `{ai:false, note}` whenever the call is unavailable or unusable — the panel
- * then keeps the deterministic ordering.
+ * Read the host's model catalog for the panel's picker.
+ *
+ * This mirrors what the host's own model menu builds, but only keeps what the
+ * picker needs: provider groups, display names, and reasoning efforts wide
+ * enough to be worth choosing between. `listModels` answers from the provider
+ * adapter, so a provider that cannot list models is reported as a failure
+ * instead of disappearing silently.
+ *
+ * @param ctx - host context carrying the optional `llm` service.
+ * @returns `{available, groups, default, failures}`; `available:false` means no
+ * llm service is mounted, which is a normal deployment, not an error.
  */
-async function analyzeWithLlm(ctx, scan) {
+async function readModelCatalog(ctx) {
+  const unavailable = { available: false, groups: [], default: null, failures: [] }
+  const llm = ctx.get('llm')
+  if (llm === undefined || typeof llm.listProviders !== 'function') return unavailable
+
+  let providers
+  try {
+    providers = llm.listProviders()
+  } catch {
+    return unavailable
+  }
+  if (!Array.isArray(providers) || providers.length === 0) return { ...unavailable, available: true }
+
+  const groups = []
+  const failures = []
+  for (const provider of providers) {
+    if (provider === null || typeof provider !== 'object') continue
+    if (typeof provider.id !== 'string' || provider.id === '') continue
+    const name = typeof provider.name === 'string' && provider.name !== '' ? provider.name : provider.id
+    let models
+    try {
+      models = await llm.listModels(provider.id)
+    } catch (error) {
+      failures.push({ id: provider.id, name, message: error instanceof Error ? error.message : String(error) })
+      continue
+    }
+    const entries = await Promise.all((Array.isArray(models) ? models : []).map(async (model) => {
+      if (model === null || typeof model !== 'object') return undefined
+      if (typeof model.id !== 'string' || model.id === '') return undefined
+      const label = typeof model.name === 'string' && model.name !== '' ? model.name : model.id
+      const badge = model.badge !== null && typeof model.badge === 'object' && typeof model.badge.text === 'string'
+        ? model.badge.text
+        : undefined
+      // Reasoning efforts are per-model and can require an adapter round trip;
+      // one model without them must not take the whole provider down.
+      let reasoning
+      if (typeof llm.resolveModelInfo === 'function') {
+        try {
+          const info = await llm.resolveModelInfo(provider.id, model.id)
+          const efforts = info?.reasoning?.efforts
+          if (Array.isArray(efforts) && efforts.length > 1) {
+            reasoning = {
+              efforts: efforts.map((effort) => ({
+                id: String(effort.id),
+                name: typeof effort.name === 'string' && effort.name !== '' ? effort.name : String(effort.id),
+              })),
+              ...(typeof info.reasoning.defaultEffort === 'string' ? { defaultEffort: info.reasoning.defaultEffort } : {}),
+            }
+          }
+        } catch {
+          /* reasoning metadata is optional */
+        }
+      }
+      return {
+        id: model.id,
+        name: label,
+        ...(badge === undefined ? {} : { badge }),
+        ...(reasoning === undefined ? {} : { reasoning }),
+      }
+    }))
+    const kept = entries.filter((entry) => entry !== undefined)
+    if (kept.length > 0) groups.push({ id: provider.id, name, models: kept })
+  }
+
+  const fallback = defaultSelectionOf(ctx)
+  return {
+    available: true,
+    groups,
+    failures,
+    default: fallback === undefined
+      ? null
+      : {
+          provider: fallback.provider,
+          model: fallback.model,
+          ...(typeof fallback.reasoningEffort === 'string' ? { reasoningEffort: fallback.reasoningEffort } : {}),
+        },
+  }
+}
+
+/** The deployment's default selection, or undefined when none is configured. */
+function defaultSelectionOf(ctx) {
+  try {
+    const selection = ctx.get('agentDefaultModel')?.currentSelection?.()
+    if (selection === null || typeof selection !== 'object') return undefined
+    if (typeof selection.provider !== 'string' || selection.provider === '') return undefined
+    if (typeof selection.model !== 'string' || selection.model === '') return undefined
+    return selection
+  } catch {
+    return undefined
+  }
+}
+
+/** Accept a selection from the wire; anything malformed becomes undefined. */
+function readSelectionInput(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const provider = typeof value.provider === 'string' ? value.provider.trim() : ''
+  const model = typeof value.model === 'string' ? value.model.trim() : ''
+  if (provider === '' || model === '') return undefined
+  const reasoningEffort = typeof value.reasoningEffort === 'string' ? value.reasoningEffort.trim() : ''
+  return { provider, model, ...(reasoningEffort === '' ? {} : { reasoningEffort }) }
+}
+
+/**
+ * Whether the exact provider/model is currently advertised.
+ *
+ * Routing does not depend on catalog membership, but a picker must not send a
+ * model that has since been removed: the caller then falls back to the
+ * deployment default instead of failing the whole analysis.
+ */
+async function selectionIsAvailable(llm, selection) {
+  try {
+    const providers = typeof llm.listProviders === 'function' ? llm.listProviders() : []
+    if (!Array.isArray(providers) || !providers.some((provider) => provider && provider.id === selection.provider)) {
+      return false
+    }
+    if (typeof llm.listModels !== 'function') return true
+    const models = await llm.listModels(selection.provider)
+    return Array.isArray(models) && models.some((model) => model && model.id === selection.model)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Ask a model to rank the findings. Resolves with `{ai:false, note}` whenever
+ * the call is unavailable or unusable — the panel then keeps the deterministic
+ * ordering.
+ *
+ * @param ctx - host context.
+ * @param scan - the stored scan to rank.
+ * @param requested - optional explicit selection from the panel's picker.
+ */
+async function analyzeWithLlm(ctx, scan, requested) {
   const llm = ctx.get('llm')
   if (llm === undefined || typeof llm.stream !== 'function') {
     return { ai: false, note: '本机没有挂载 llm 服务，使用规则排序。' }
   }
 
   let selection
-  try {
-    selection = ctx.get('agentDefaultModel')?.currentSelection?.()
-  } catch {
-    selection = undefined
+  // Reported back when an explicit pick has disappeared, so the panel can say
+  // which model it actually used instead of quietly showing the old choice.
+  let switchedFrom
+  if (requested !== undefined) {
+    if (await selectionIsAvailable(llm, requested)) selection = requested
+    else switchedFrom = requested.provider + '/' + requested.model
   }
-  if (!selection || typeof selection.provider !== 'string' || typeof selection.model !== 'string') {
-    return { ai: false, note: '没有可用的默认模型，使用规则排序。' }
+  if (selection === undefined) {
+    selection = defaultSelectionOf(ctx)
+    if (selection === undefined) {
+      return {
+        ai: false,
+        note: '没有可用的默认模型，使用规则排序。',
+        ...(switchedFrom === undefined ? {} : { switchedFrom }),
+      }
+    }
   }
 
   const payload = {
@@ -1357,10 +1506,15 @@ async function analyzeWithLlm(ctx, scan) {
       model: selection.provider + '/' + selection.model,
       advice,
       items: rows,
+      ...(switchedFrom === undefined ? {} : { switchedFrom }),
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    return { ai: false, note: '模型分析失败（' + message + '），使用规则排序。' }
+    return {
+      ai: false,
+      note: '模型分析失败（' + message + '），使用规则排序。',
+      ...(switchedFrom === undefined ? {} : { switchedFrom }),
+    }
   } finally {
     clearTimeout(timer)
   }
@@ -1679,6 +1833,9 @@ export function apply(ctx) {
         homes: { temp: envOf('TEMP', os.tmpdir()), userProfile: envOf('USERPROFILE', os.homedir()) },
         ai: {
           llm: llm !== undefined && typeof llm.stream === 'function',
+          providers: llm !== undefined && typeof llm.listProviders === 'function'
+            ? (() => { try { return llm.listProviders().length } catch { return 0 } })()
+            : 0,
           route: selection !== undefined && typeof selection.model === 'string'
             ? selection.provider + '/' + selection.model
             : null,
@@ -1708,7 +1865,15 @@ export function apply(ctx) {
       writeJson(res, 200, { ok: true, scan })
     }),
 
-    // AI ranking of the scan's findings.
+    // Model catalog for the panel's picker: providers, display names, and the
+    // reasoning efforts that are worth choosing between.
+    route('GET', '/models', async (req, res) => {
+      writeJson(res, 200, { ok: true, models: await readModelCatalog(ctx) })
+    }),
+
+    // AI ranking of the scan's findings. The body may carry an explicit
+    // provider/model/reasoningEffort; absent or stale picks fall back to the
+    // deployment default, and the reply names the model that actually ran.
     route('POST', '/analyze', async (req, res) => {
       const body = await readJsonBody(req)
       if (body === undefined) {
@@ -1720,7 +1885,8 @@ export function apply(ctx) {
         writeError(res, 404, '扫描结果已过期，请重新扫描')
         return
       }
-      const analysis = await analyzeWithLlm(ctx, scan)
+      const requested = readSelectionInput(body.selection) ?? readSelectionInput(body)
+      const analysis = await analyzeWithLlm(ctx, scan, requested)
       writeJson(res, 200, { ok: true, analysis })
     }),
 
@@ -1824,4 +1990,7 @@ export const __test = {
   DEFAULT_TEMP_SKIP,
   PROGRAM_EXTENSIONS,
   PROTECTED,
+  // Seam for the route tests: lets a synthetic scan be analyzed without
+  // walking a real disk, so the model-selection path is deterministic.
+  rememberScan,
 }

@@ -1,54 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="252" viewBox="0 0 1200 252" role="img" aria-labelledby="flowTitle flowDesc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="flowTitle flowDesc">
   <title id="flowTitle">一次清理的四个步骤</title>
-  <desc id="flowDesc">打开面板自动触发扫描；扫描加排序约 7.2 秒量完 21 项并让模型给出优先级；勾选确认时 AI 推荐项已预选、确认框写明释放量；清理后逐项回报释放量与失败原因。</desc>
+  <desc id="flowDesc">四个步骤沿一条竖脊自上而下推进：打开面板即自动扫描；7.2 秒量完 21 项目录体积；模型给出优先级与理由，推荐项已预选；确认后逐项回报释放量与失败原因，本例回收站 1.1 GB 加临时文件 512 MB 共释放 1.6 GB。</desc>
 
-  <rect width="1200" height="252" rx="24" fill="#080A0F"/>
+  <rect width="1200" height="300" rx="24" fill="#0A0E15"/>
 
-  <text x="56" y="66" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="28" font-weight="700" fill="#E9EEF9">一次清理的四个步骤</text>
-  <text x="1144" y="66" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16" fill="#7D8AA3">scan → rank → pick → clean</text>
+  <text x="56" y="56" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="27" font-weight="680" fill="#E9EEF9">一次清理的四个步骤</text>
+  <text x="1144" y="56" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#4A5670">scan → rank → pick → clean</text>
 
-  <!-- stage 1 -->
-  <g>
-    <rect x="48" y="94" width="258" height="116" rx="14" fill="#121722" stroke="#263044"/>
-    <text x="70" y="124" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#5B9BFF">01</text>
-    <text x="70" y="152" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="20" font-weight="600" fill="#E9EEF9">打开面板</text>
-    <text x="70" y="178" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="17" fill="#A7B4CC">点侧边栏磁盘图标</text>
-    <text x="70" y="200" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="17" fill="#A7B4CC">扫描自动开始</text>
-  </g>
+  <!-- the spine: one continuous line with four nodes, not four separate cards -->
+  <line x1="72" y1="108" x2="72" y2="260" stroke="#1E2634" stroke-width="1.5"/>
 
-  <!-- connector -->
-  <path d="M312 152h14M320 146l6 6-6 6" stroke="#3A465C" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <g id="steps" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif">
+    <!-- 01 -->
+    <circle cx="72" cy="108" r="9" fill="#0A0E15" stroke="#5B9BFF" stroke-width="1.6"/>
+    <circle cx="72" cy="108" r="3.2" fill="#5B9BFF"/>
+    <text x="100" y="104" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#5B9BFF">01</text>
+    <text x="100" y="130" font-size="20" font-weight="620" fill="#E9EEF9">打开面板</text>
+    <text x="232" y="130" font-size="18" fill="#A7B4CC">侧边栏点磁盘图标，扫描随即开始，无需再点任何按钮</text>
 
-  <!-- stage 2 -->
-  <g>
-    <rect x="330" y="94" width="258" height="116" rx="14" fill="#121722" stroke="#263044"/>
-    <text x="352" y="124" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#5B9BFF">02</text>
-    <text x="352" y="152" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="20" font-weight="600" fill="#E9EEF9">扫描 + 排序</text>
-    <text x="352" y="178" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="17" fill="#A7B4CC">7.2 秒量完 21 项</text>
-    <text x="352" y="200" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="17" fill="#A7B4CC">模型给出优先级与理由</text>
-  </g>
+    <!-- 02 -->
+    <circle cx="72" cy="160" r="9" fill="#0A0E15" stroke="#5B9BFF" stroke-width="1.6"/>
+    <circle cx="72" cy="160" r="3.2" fill="#5B9BFF"/>
+    <text x="100" y="156" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#5B9BFF">02</text>
+    <text x="100" y="182" font-size="20" font-weight="620" fill="#E9EEF9">扫描 + 排序</text>
+    <text x="232" y="182" font-size="18" fill="#A7B4CC">7.2 秒量完 21 项目录体积，模型同时给出优先级与理由</text>
+    <text x="1144" y="182" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#7D8AA3">列表已可勾选</text>
 
-  <!-- connector -->
-  <path d="M594 152h14M602 146l6 6-6 6" stroke="#3A465C" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- 03 -->
+    <circle cx="72" cy="212" r="9" fill="#0A0E15" stroke="#5B9BFF" stroke-width="1.6"/>
+    <circle cx="72" cy="212" r="3.2" fill="#5B9BFF"/>
+    <text x="100" y="208" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#5B9BFF">03</text>
+    <text x="100" y="234" font-size="20" font-weight="620" fill="#E9EEF9">勾选确认</text>
+    <text x="232" y="234" font-size="18" fill="#A7B4CC">推荐项已预选，确认框写明项数与预计释放量</text>
 
-  <!-- stage 3 -->
-  <g>
-    <rect x="612" y="94" width="258" height="116" rx="14" fill="#121722" stroke="#263044"/>
-    <text x="634" y="124" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#5B9BFF">03</text>
-    <text x="634" y="152" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="20" font-weight="600" fill="#E9EEF9">勾选确认</text>
-    <text x="634" y="178" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="17" fill="#A7B4CC">AI 推荐项已预选</text>
-    <text x="634" y="200" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="17" fill="#A7B4CC">确认框写明释放量</text>
-  </g>
-
-  <!-- connector -->
-  <path d="M876 152h14M884 146l6 6-6 6" stroke="#3A465C" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- stage 4 -->
-  <g>
-    <rect x="894" y="94" width="258" height="116" rx="14" fill="#121722" stroke="#263044"/>
-    <text x="916" y="124" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#5B9BFF">04</text>
-    <text x="916" y="152" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="20" font-weight="600" fill="#E9EEF9">清理回报</text>
-    <text x="916" y="178" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="17" fill="#A7B4CC">逐项列出释放量</text>
-    <text x="916" y="200" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" font-size="17" fill="#A7B4CC">失败项给出原因</text>
+    <!-- 04 -->
+    <circle cx="72" cy="260" r="9" fill="#0A0E15" stroke="#34D399" stroke-width="1.6"/>
+    <circle cx="72" cy="260" r="3.2" fill="#34D399"/>
+    <text x="100" y="256" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" fill="#34D399">04</text>
+    <text x="100" y="282" font-size="20" font-weight="620" fill="#E9EEF9">清理回报</text>
+    <text x="232" y="282" font-size="18" fill="#A7B4CC">逐项列出释放量，失败项给出具体原因</text>
+    <text x="1144" y="282" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#34D399">+1.6 GB</text>
   </g>
 </svg>
